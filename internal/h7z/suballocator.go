@@ -1,11 +1,11 @@
 package h7z
 
 type subAllocator struct {
-	glueCount, subAllocatorSize, unitsStart, freeListPos int
-	heapStart, loUnit, hiUnit, tempMemBlockPos           int
-	HeapEnd, PText, FakeUnitsStart                       int
-	units2Indx                                           [128]int
-	indx2Units                                           [nIndexes]int
+	glueCount, subAllocatorSize, unitsStart, freeListPos uint32
+	heapStart, loUnit, hiUnit, tempMemBlockPos           uint32
+	HeapEnd, PText, FakeUnitsStart                       uint32
+	units2Indx                                           [128]uint32
+	indx2Units                                           [nIndexes]uint32
 	Heap                                                 *heap
 	freeList                                             [nIndexes]rarNode
 }
@@ -18,7 +18,7 @@ func (s *subAllocator) Clean() {
 	s.subAllocatorSize = 0
 }
 
-func (s *subAllocator) InsertNode(p, indx int) {
+func (s *subAllocator) InsertNode(p, indx uint32) {
 	x := newRarNode(s.Heap)
 	x.Address = p
 	x.SetNext(s.freeList[indx].Next())
@@ -29,7 +29,7 @@ func (s *subAllocator) IncPText() {
 	s.PText++
 }
 
-func (s *subAllocator) RemoveNode(indx int) int {
+func (s *subAllocator) RemoveNode(indx uint32) uint32 {
 	r := s.freeList[indx].Next()
 	x := newRarNode(s.Heap)
 	x.Address = r
@@ -37,15 +37,15 @@ func (s *subAllocator) RemoveNode(indx int) int {
 	return r
 }
 
-func (s *subAllocator) U2B(nu int) int {
+func (s *subAllocator) U2B(nu uint32) uint32 {
 	return unitSize * nu
 }
 
-func (s *subAllocator) MbPtr(basePtr, items int) int {
+func (s *subAllocator) MbPtr(basePtr, items uint32) uint32 {
 	return basePtr + s.U2B(items)
 }
 
-func (s *subAllocator) SplitBlock(pv, oldIndx, newIndx int) {
+func (s *subAllocator) SplitBlock(pv, oldIndx, newIndx uint32) {
 	uDiff := s.indx2Units[oldIndx] - s.indx2Units[newIndx]
 	p := pv + s.U2B(s.indx2Units[newIndx])
 	i := s.units2Indx[uDiff-1]
@@ -59,11 +59,11 @@ func (s *subAllocator) SplitBlock(pv, oldIndx, newIndx int) {
 	s.InsertNode(p, s.units2Indx[uDiff-1])
 }
 
-func (s *subAllocator) AllocateMemory() int {
+func (s *subAllocator) AllocateMemory() uint32 {
 	return s.subAllocatorSize
 }
 
-func (s *subAllocator) StartSubAllocator(saSize int) {
+func (s *subAllocator) StartSubAllocator(saSize uint32) {
 	allocSize := saSize/fixedUnitSize*unitSize + unitSize
 	realAllocSize := 1 + allocSize + 4*nIndexes
 	s.tempMemBlockPos = realAllocSize
@@ -95,7 +95,7 @@ func (s *subAllocator) GlueFreeBlocks() {
 	}
 	s0.SetPrev(s0.Address)
 	s0.SetNext(s0.Address)
-	for i := 0; i < nIndexes; i++ {
+	for i := uint32(0); i < nIndexes; i++ {
 		for s.freeList[i].Next() != 0 {
 			p.Address = s.RemoveNode(i)
 			p.InsertAt(s0)
@@ -116,7 +116,7 @@ func (s *subAllocator) GlueFreeBlocks() {
 	p.Address = s0.Next()
 	for p.Address != s0.Address {
 		p.Remove()
-		var sz int
+		var sz uint32
 		for sz = p.Nu(); sz > 128; sz -= 128 {
 			s.InsertNode(p.Address, nIndexes-1)
 			p.Address = s.MbPtr(p.Address, 128)
@@ -132,7 +132,7 @@ func (s *subAllocator) GlueFreeBlocks() {
 	}
 }
 
-func (s *subAllocator) AllocUnitsRare(indx int) int {
+func (s *subAllocator) AllocUnitsRare(indx uint32) uint32 {
 	if s.glueCount == 0 {
 		s.glueCount = 255
 		s.GlueFreeBlocks()
@@ -166,7 +166,7 @@ func (s *subAllocator) AllocUnitsRare(indx int) int {
 	return r
 }
 
-func (s *subAllocator) AllocUnits(nu int) int {
+func (s *subAllocator) AllocUnits(nu uint32) uint32 {
 	indx := s.units2Indx[nu-1]
 	if s.freeList[indx].Next() != 0 {
 		return s.RemoveNode(indx)
@@ -180,7 +180,7 @@ func (s *subAllocator) AllocUnits(nu int) int {
 	return s.AllocUnitsRare(indx)
 }
 
-func (s *subAllocator) AllocContext() int {
+func (s *subAllocator) AllocContext() uint32 {
 	if s.hiUnit != s.loUnit {
 		s.hiUnit -= unitSize
 		return s.hiUnit
@@ -191,7 +191,7 @@ func (s *subAllocator) AllocContext() int {
 	return s.AllocUnitsRare(0)
 }
 
-func (s *subAllocator) ExpandUnits(oldPtr, oldNu int) int {
+func (s *subAllocator) ExpandUnits(oldPtr, oldNu uint32) uint32 {
 	i0 := s.units2Indx[oldNu-1]
 	i1 := s.units2Indx[oldNu-1+1]
 	if i0 == i1 {
@@ -206,7 +206,7 @@ func (s *subAllocator) ExpandUnits(oldPtr, oldNu int) int {
 	return ptr
 }
 
-func (s *subAllocator) ShrinkUnits(oldPtr, oldNu, newNu int) int {
+func (s *subAllocator) ShrinkUnits(oldPtr, oldNu, newNu uint32) uint32 {
 	i0 := s.units2Indx[oldNu-1]
 	i1 := s.units2Indx[newNu-1]
 	if i0 == i1 {
@@ -223,11 +223,11 @@ func (s *subAllocator) ShrinkUnits(oldPtr, oldNu, newNu int) int {
 	return oldPtr
 }
 
-func (s *subAllocator) FreeUnits(ptr, oldNu int) {
+func (s *subAllocator) FreeUnits(ptr, oldNu uint32) {
 	s.InsertNode(ptr, s.units2Indx[oldNu-1])
 }
 
-func (s *subAllocator) DecPText(dptext int) {
+func (s *subAllocator) DecPText(dptext uint32) {
 	s.PText -= dptext
 }
 
@@ -245,8 +245,8 @@ func (s *subAllocator) InitSubAllocator() {
 	s.FakeUnitsStart = s.heapStart + size1
 	s.hiUnit = s.loUnit + realSize2
 
-	k := 1
-	i := 0
+	k := uint32(1)
+	i := uint32(0)
 	for i = 0; i < n1; i++ {
 		s.indx2Units[i] = k & 0xff
 		k++
@@ -277,6 +277,6 @@ func (s *subAllocator) InitSubAllocator() {
 	}
 }
 
-func (s *subAllocator) SizeOfFreeList() int {
-	return len(s.freeList) * rarNodeSize
+func (s *subAllocator) SizeOfFreeList() uint32 {
+	return uint32(len(s.freeList)) * rarNodeSize
 }

@@ -1,7 +1,7 @@
 package h7z
 
 type stateRef struct {
-	Successor, symbol, freq int
+	Successor, symbol, freq uint32
 }
 
 func newStateRef(s *state) stateRef {
@@ -12,26 +12,26 @@ func newStateRef(s *state) stateRef {
 	return r
 }
 
-func (s *stateRef) IncrementFreq(dfreq int) {
+func (s *stateRef) IncrementFreq(dfreq uint32) {
 	s.freq = (s.freq + dfreq) & 0xff
 }
 
-func (s *stateRef) DecrementFreq(dfreq int) {
+func (s *stateRef) DecrementFreq(dfreq uint32) {
 	s.freq = (s.freq - dfreq) & 0xff
 }
 
-func (s *stateRef) Freq() int {
+func (s *stateRef) Freq() uint32 {
 	return s.freq
 }
 
-func (s *stateRef) SetFreq(f int) {
+func (s *stateRef) SetFreq(f uint32) {
 	s.freq = f & 0xff
 }
 
-func (s *stateRef) Symbol() int {
+func (s *stateRef) Symbol() uint32 {
 	return s.symbol
 }
 
-func (s *stateRef) SetSymbol(sym int) {
+func (s *stateRef) SetSymbol(sym uint32) {
 	s.symbol = sym & 0xff
 }

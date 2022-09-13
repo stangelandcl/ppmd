@@ -1,10 +1,10 @@
 package h7z
 
 type see2context struct {
-	summ, shift, count int
+	summ, shift, count uint32
 }
 
-func newSee2Context(val int) see2context {
+func newSee2Context(val uint32) see2context {
 	//fmt.Printf("newsee2: %v\n", val)
 	s := see2context{}
 	s.shift = (periodBits - 4) & 0xff
@@ -13,7 +13,7 @@ func newSee2Context(val int) see2context {
 	return s
 }
 
-func (s *see2context) Mean() int {
+func (s *see2context) Mean() uint32 {
 	r := urshift(s.summ, s.shift)
 	//fmt.Printf("mean: %v\t%v\t%v\n", r, s.summ, s.shift)
 	s.summ -= r
@@ -23,32 +23,32 @@ func (s *see2context) Mean() int {
 	return r
 }
 
-func (s *see2context) Count() int {
+func (s *see2context) Count() uint32 {
 	return s.count
 }
 
-func (s *see2context) SetCount(c int) {
+func (s *see2context) SetCount(c uint32) {
 	s.count = c & 0xff
 }
 
-func (s *see2context) Shift() int {
+func (s *see2context) Shift() uint32 {
 	return s.shift
 }
 
-func (s *see2context) SetShift(shift int) {
+func (s *see2context) SetShift(shift uint32) {
 	//fmt.Printf("shift: %v\n", shift)
 	s.shift = shift & 0xff
 }
 
-func (s *see2context) Summ() int {
+func (s *see2context) Summ() uint32 {
 	return s.summ
 }
 
-func (s *see2context) SetSumm(summ int) {
+func (s *see2context) SetSumm(summ uint32) {
 	s.summ = summ & 0xffff
 }
 
-func (s *see2context) IncSumm(dsum int) {
+func (s *see2context) IncSumm(dsum uint32) {
 	s.summ += dsum
 }
 

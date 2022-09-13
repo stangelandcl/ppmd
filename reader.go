@@ -27,7 +27,7 @@ func NewH7zReader(r io.Reader, order, memorySize, uncompressedSize int) (Reader,
 	}
 	d.uncompressedSize = uncompressedSize
 	d.r = r
-	m, err := h7z.NewModelPpm(order, memorySize, r)
+	m, err := h7z.NewModelPpm(uint32(order), uint32(memorySize), r)
 	d.m = m
 	return d, err
 }

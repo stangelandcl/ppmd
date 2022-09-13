@@ -3,33 +3,34 @@ package h7z
 import (
 	"fmt"
 	"io"
+	"math"
 )
 
 type ModelPpm struct {
-	charMask               [256]int
-	Ns2Index               [256]int
-	Ns2BsIndex             [256]int
-	Hb2Flag                [256]int
-	binSumm                [128][64]int
-	ps                     [maxO]int
+	charMask               [256]uint32
+	Ns2Index               [256]uint32
+	Ns2BsIndex             [256]uint32
+	Hb2Flag                [256]uint32
+	binSumm                [128][64]uint32
+	ps                     [maxO]uint32
 	See2Cont               [25][16]see2context
-	escCount, _prevSuccess int
+	escCount, _prevSuccess uint32
 	SubAlloc               *subAllocator
 	FoundState             state
 	DummySee2Cont          see2context
 	// temp contexts are used because they are created often and benchmarking
 	// proved resetting was about 2x fast as creating each time
 	minContext, maxContext, pc, pc2, upBranch, successor *ppmContext
-	initEsc, maxOrder, runLength                         int
-	InitRl, OrderFall                                    int
+	initEsc, maxOrder, runLength                         uint32
+	InitRl, OrderFall                                    uint32
 
 	decoder    decoder
-	hiBitsFlag int
+	hiBitsFlag uint32
 }
 
-var InitBinEsc = []int{0x3CDD, 0x1F3F, 0x59BF, 0x48F3, 0x64A1, 0x5ABC, 0x6632, 0x6051}
+var InitBinEsc = []uint32{0x3CDD, 0x1F3F, 0x59BF, 0x48F3, 0x64A1, 0x5ABC, 0x6632, 0x6051}
 
-func NewModelPpm(order, memsize int, r io.Reader) (*ModelPpm, error) {
+func NewModelPpm(order, memsize uint32, r io.Reader) (*ModelPpm, error) {
 	m := &ModelPpm{SubAlloc: newSubAllocator()}
 	m.SubAlloc.StartSubAllocator(memsize)
 	m.minContext = newPpmContext(m.SubAlloc.Heap)
@@ -49,11 +50,11 @@ func NewModelPpm(order, memsize int, r io.Reader) (*ModelPpm, error) {
 	return m, err
 }
 
-func (m *ModelPpm) PrevSuccess() int {
+func (m *ModelPpm) PrevSuccess() uint32 {
 	return m._prevSuccess & 0xff
 }
 
-func (m *ModelPpm) SetPrevSuccess(x int) {
+func (m *ModelPpm) SetPrevSuccess(x uint32) {
 	/*
 		fmt.Printf("prev: %v\n", x)
 		if m.decoder.counter == 150 {
@@ -68,7 +69,7 @@ func (m *ModelPpm) RestartModelRare() {
 		m.charMask[i] = 0
 	}
 	m.SubAlloc.InitSubAllocator()
-	var initR1 int
+	var initR1 uint32
 	if m.maxOrder < 12 {
 		initR1 = m.maxOrder
 	} else {
@@ -91,29 +92,29 @@ func (m *ModelPpm) RestartModelRare() {
 	addr = m.minContext.FreqData.Stats()
 	m.runLength = m.InitRl
 	m.SetPrevSuccess(0)
-	for i := 0; i < 256; i++ {
+	for i := uint32(0); i < 256; i++ {
 		state.Address = addr + i*stateSize
 		state.SetSymbol(i)
 		state.SetFreq(1)
 		state.SetSuccessor(0)
 	}
 
-	for i := 0; i < 128; i++ {
+	for i := uint32(0); i < 128; i++ {
 		for k := 0; k < 8; k++ {
 			for n := 0; n < 64; n += 8 {
 				m.binSumm[i][k+n] = binScale - InitBinEsc[k]/(i+2)
 			}
 		}
 	}
-	for i := 0; i < 25; i++ {
+	for i := uint32(0); i < 25; i++ {
 		for k := 0; k < 16; k++ {
 			m.See2Cont[i][k] = newSee2Context(5*i + 10)
 		}
 	}
 }
 
-func (m *ModelPpm) StartModelRare(maxOrder int) {
-	var i, k, n, step int
+func (m *ModelPpm) StartModelRare(maxOrder uint32) {
+	var i, k, n, step uint32
 	m.escCount = 1
 	m.maxOrder = maxOrder
 	m.RestartModelRare()
@@ -150,15 +151,15 @@ func (m *ModelPpm) StartModelRare(maxOrder int) {
 	m.DummySee2Cont.SetShift(periodBits)
 }
 
-func (m *ModelPpm) IncEscCount(dEscCount int) {
+func (m *ModelPpm) IncEscCount(dEscCount uint32) {
 	m.escCount = (m.escCount + dEscCount) & 0xff
 }
 
-func (m *ModelPpm) IncRunLength(rl int) {
+func (m *ModelPpm) IncRunLength(rl uint32) {
 	m.runLength += rl
 }
 
-func (m *ModelPpm) CreateSuccessors(skip bool, p1 state) int {
+func (m *ModelPpm) CreateSuccessors(skip bool, p1 state) uint32 {
 	upState := stateRef{}
 	tempState := newState(m.SubAlloc.Heap)
 	//m.pc2.reset()
@@ -236,7 +237,7 @@ func (m *ModelPpm) CreateSuccessors(skip bool, p1 state) int {
 		cf := p.Freq() - 1
 		s0 := m.pc2.FreqData.SummFreq() - m.pc2.NumStats() - cf
 
-		tmp := 0
+		tmp := uint32(0)
 		if 2*cf <= s0 {
 			if 5*cf > s0 {
 				tmp = 1
@@ -275,7 +276,7 @@ func (m *ModelPpm) UpdateModel() {
 	//m.pc.reset()
 	//m.successor.reset()
 
-	var ns1, ns, cf, sf, s0 int
+	var ns1, ns, cf, sf, s0 uint32
 	m.pc.SetAddress(m.minContext.Suffix())
 	if fs.Freq() < maxFreq/4 && m.pc.address != 0 {
 		if m.pc.NumStats() != 1 {
@@ -355,15 +356,15 @@ func (m *ModelPpm) UpdateModel() {
 					return
 				}
 			}
-			sum := 0
+			sum := uint32(0)
 			if 2*ns1 < ns {
 				sum = 1
 			}
-			sum2 := 0
+			sum2 := uint32(0)
 			if 4*ns1 <= ns {
 				sum2 = 1
 			}
-			sum3 := 0
+			sum3 := uint32(0)
 			if m.pc.FreqData.SummFreq() <= 8*ns1 {
 				sum3 = 1
 			}
@@ -392,26 +393,26 @@ func (m *ModelPpm) UpdateModel() {
 		cf = 2 * fs.Freq() * (m.pc.FreqData.SummFreq() + 6)
 		sf = s0 + m.pc.FreqData.SummFreq()
 		if cf < 6*sf {
-			cf1 := 0
+			cf1 := uint32(0)
 			if cf > sf {
 				cf1 = 1
 			}
-			cf2 := 0
+			cf2 := uint32(0)
 			if cf >= 4*sf {
 				cf2 = 1
 			}
 			cf = 1 + cf1 + cf2
 			m.pc.FreqData.IncrementSummFreq(3)
 		} else {
-			cf1 := 0
+			cf1 := uint32(0)
 			if cf >= 9*sf {
 				cf1 = 1
 			}
-			cf2 := 0
+			cf2 := uint32(0)
 			if cf >= 12*sf {
 				cf2 = 1
 			}
-			cf3 := 0
+			cf3 := uint32(0)
 			if cf >= 15*sf {
 				cf3 = 1
 			}
@@ -445,11 +446,11 @@ func (m *ModelPpm) DecodeChar() (byte, error) {
 	if m.minContext.NumStats() != 1 {
 		s := newState(m.SubAlloc.Heap)
 		s.Address = m.minContext.FreqData.Stats()
-		var i int
+		var i uint32
 		sumfreq := m.minContext.FreqData.SummFreq()
 		count := m.decoder.Threshold(uint(sumfreq))
 		hiCnt := s.Freq()
-		if int(count) < hiCnt {
+		if uint32(count) < hiCnt {
 			m.decoder.Decode(0, uint(s.Freq()))
 			symbol := byte(s.Symbol())
 			m.minContext.update1_0(m, s.Address)
@@ -461,7 +462,7 @@ func (m *ModelPpm) DecodeChar() (byte, error) {
 		for {
 			s.IncrementAddress()
 			hiCnt += s.Freq()
-			if hiCnt > int(count) {
+			if hiCnt > uint32(count) {
 				m.decoder.Decode(uint(hiCnt-s.Freq()), uint(s.Freq()))
 				symbol := byte(s.Symbol())
 				m.minContext.Update1(m, s.Address)
@@ -473,13 +474,13 @@ func (m *ModelPpm) DecodeChar() (byte, error) {
 				break
 			}
 		}
-		if int(count) >= m.minContext.FreqData.SummFreq() {
+		if uint32(count) >= m.minContext.FreqData.SummFreq() {
 			return 0, fmt.Errorf("invalid SummFreq < count")
 		}
 		m.hiBitsFlag = m.Hb2Flag[m.FoundState.Symbol()] & 0xff
 		m.decoder.Decode(uint(hiCnt), uint(m.minContext.FreqData.SummFreq()-hiCnt))
 		for i = 0; i < 256; i++ {
-			m.charMask[i] = -1
+			m.charMask[i] = math.MaxUint32
 		}
 		m.charMask[s.Symbol()] = 0
 		i = m.minContext.NumStats() - 1
@@ -506,7 +507,7 @@ func (m *ModelPpm) DecodeChar() (byte, error) {
 			m.binSumm[off1][off2] = (bs + interval - m.minContext.GetMean(bs, periodBits, 2)) & 0xFFFF
 			m.FoundState.Address = rs.Address
 			symbol := byte(rs.Symbol())
-			freq := 0
+			freq := uint32(0)
 			if rs.Freq() < 128 {
 				freq = 1
 			}
@@ -518,9 +519,9 @@ func (m *ModelPpm) DecodeChar() (byte, error) {
 		}
 		bs = (bs - m.minContext.GetMean(bs, periodBits, 2)) & 0xFFFF
 		m.binSumm[off1][off2] = bs
-		m.initEsc = int(expEscape[urshift(bs, 10)])
+		m.initEsc = uint32(expEscape[urshift(bs, 10)])
 		for i := 0; i < 256; i++ {
-			m.charMask[i] = -1
+			m.charMask[i] = math.MaxUint32
 		}
 		m.charMask[rs.Symbol()] = 0
 		m.SetPrevSuccess(0)
@@ -538,9 +539,9 @@ func (m *ModelPpm) DecodeChar() (byte, error) {
 				break
 			}
 		}
-		hiCnt := 0
+		hiCnt := uint32(0)
 		s.Address = m.minContext.FreqData.Stats()
-		i := 0
+		i := uint32(0)
 		num := m.minContext.NumStats() - numMasked
 		for {
 			k := m.charMask[s.Symbol()]
@@ -555,7 +556,7 @@ func (m *ModelPpm) DecodeChar() (byte, error) {
 
 		see, freqSum := m.minContext.MakeEscFreq(m, numMasked)
 		freqSum += hiCnt
-		count := int(m.decoder.Threshold(uint(freqSum)))
+		count := uint32(m.decoder.Threshold(uint(freqSum)))
 
 		if count < hiCnt {
 			ps := newState(m.SubAlloc.Heap)

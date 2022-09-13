@@ -1,11 +1,11 @@
 package h7z
 
 type ppmContext struct {
-	ps       [256]int
+	ps       [256]uint32
 	Memory   *heap
 	FreqData freqData
 	OneState state
-	address  int
+	address  uint32
 	tmp      *ppmContext
 }
 
@@ -31,11 +31,11 @@ func (c *ppmContext) reset() {
 	c.SetAddress(0)
 }
 
-func (p *ppmContext) NumStats() int {
+func (p *ppmContext) NumStats() uint32 {
 	return p.Memory.UInt16(p.address)
 }
 
-func (p *ppmContext) SetNumStats(num int) {
+func (p *ppmContext) SetNumStats(num uint32) {
 	p.Memory.PutUInt16(p.address, num)
 }
 
@@ -43,25 +43,25 @@ func (p *ppmContext) SetOneState(r stateRef) {
 	p.OneState.SetRef(r)
 }
 
-func (p *ppmContext) Suffix() int {
+func (p *ppmContext) Suffix() uint32 {
 	return p.Memory.UInt32(p.address + 8)
 }
 
-func (p *ppmContext) SetSuffix(suffix int) {
+func (p *ppmContext) SetSuffix(suffix uint32) {
 	p.Memory.PutUInt32(p.address+8, suffix)
 }
 
-func (p *ppmContext) SetAddress(addr int) {
+func (p *ppmContext) SetAddress(addr uint32) {
 	p.address = addr
 	p.OneState.Address = addr + 2
 	p.FreqData.Address = addr + 2
 }
 
-func (p *ppmContext) GetMean(summ, shift, round int) int {
+func (p *ppmContext) GetMean(summ, shift, round uint32) uint32 {
 	return urshift(summ+(1<<(shift-round)), shift)
 }
 
-func (p *ppmContext) CreateChild(m *ModelPpm, pstats state, firstState stateRef) int {
+func (p *ppmContext) CreateChild(m *ModelPpm, pstats state, firstState stateRef) uint32 {
 	//p.tmp.reset(m.SubAlloc.Heap)
 	p.tmp.SetAddress(m.SubAlloc.AllocContext())
 	p.tmp.SetNumStats(1)
@@ -88,7 +88,7 @@ func (c *ppmContext) Rescale(model *ModelPpm) {
 	temp.IncrementFreq(4)
 	c.FreqData.IncrementSummFreq(4)
 	escFreq := c.FreqData.SummFreq() - p.Freq()
-	adder := 0
+	adder := uint32(0)
 	if model.OrderFall != 0 {
 		adder = 1
 	}
@@ -162,10 +162,10 @@ func (c *ppmContext) Rescale(model *ModelPpm) {
 	model.FoundState.Address = c.FreqData.Stats()
 }
 
-func (p *ppmContext) GetArrayIndex(model *ModelPpm, rs state) int {
+func (p *ppmContext) GetArrayIndex(model *ModelPpm, rs state) uint32 {
 	//p.tmp.reset(model.SubAlloc.Heap)
 	p.tmp.SetAddress(p.Suffix())
-	ret := 0
+	ret := uint32(0)
 	ret += model.PrevSuccess()
 	ret += model.Ns2BsIndex[p.tmp.NumStats()-1]
 	ret += (model.hiBitsFlag & 0xff) + 2*model.Hb2Flag[rs.Symbol()]
@@ -173,7 +173,7 @@ func (p *ppmContext) GetArrayIndex(model *ModelPpm, rs state) int {
 	return ret
 }
 
-func (c *ppmContext) Update1(model *ModelPpm, p int) {
+func (c *ppmContext) Update1(model *ModelPpm, p uint32) {
 	model.FoundState.Address = p
 	model.FoundState.IncrementFreq(4)
 	c.FreqData.IncrementSummFreq(4)
@@ -190,9 +190,9 @@ func (c *ppmContext) Update1(model *ModelPpm, p int) {
 	}
 }
 
-func (c *ppmContext) update1_0(model *ModelPpm, p int) {
+func (c *ppmContext) update1_0(model *ModelPpm, p uint32) {
 	model.FoundState.Address = p
-	x := 0
+	x := uint32(0)
 	if 2*model.FoundState.Freq() > c.FreqData.SummFreq() {
 		x = 1
 	}
@@ -205,7 +205,7 @@ func (c *ppmContext) update1_0(model *ModelPpm, p int) {
 	}
 }
 
-func (c *ppmContext) Update2(model *ModelPpm, p int) {
+func (c *ppmContext) Update2(model *ModelPpm, p uint32) {
 	temp := newState(model.SubAlloc.Heap)
 	temp.Address = p
 	model.FoundState.Address = p
@@ -218,7 +218,7 @@ func (c *ppmContext) Update2(model *ModelPpm, p int) {
 	model.runLength = model.InitRl
 }
 
-func (c *ppmContext) MakeEscFreq(model *ModelPpm, numMasked int) (*see2context, int) {
+func (c *ppmContext) MakeEscFreq(model *ModelPpm, numMasked uint32) (*see2context, uint32) {
 	//if model.decoder.counter == 701 {
 	//debug.PrintStack()
 	//}
@@ -228,7 +228,7 @@ func (c *ppmContext) MakeEscFreq(model *ModelPpm, numMasked int) (*see2context, 
 		//c.tmp.reset(model.SubAlloc.Heap)
 		c.tmp.SetAddress(c.Suffix())
 		idx1 := model.Ns2Index[nonMasked-1]
-		idx2 := 0
+		idx2 := uint32(0)
 		if nonMasked < c.tmp.NumStats()-numStats {
 			idx2++
 		}
