@@ -10,9 +10,9 @@ func newRarNode(buf *heap) rarNode {
 }
 
 func (r *rarNode) Next() int {
-	return r.heap.Int32(r.Address)
+	return r.heap.UInt32(r.Address)
 }
 
 func (r *rarNode) SetNext(next int) {
-	r.heap.PutInt32(r.Address, next)
+	r.heap.PutUInt32(r.Address, next)
 }

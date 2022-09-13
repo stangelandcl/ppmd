@@ -10,11 +10,11 @@ func newFreqData(buf *heap) freqData {
 }
 
 func (f *freqData) Stats() int {
-	return f.heap.Int32(f.Address + 2)
+	return f.heap.UInt32(f.Address + 2)
 }
 
 func (f *freqData) SetStats(state int) {
-	f.heap.PutInt32(f.Address+2, state)
+	f.heap.PutUInt32(f.Address+2, state)
 }
 
 func (f *freqData) SummFreq() int {

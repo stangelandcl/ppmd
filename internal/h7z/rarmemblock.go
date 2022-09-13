@@ -36,19 +36,19 @@ func (r *rarMemBlock) Remove() {
 }
 
 func (r *rarMemBlock) Next() int {
-	return r.heap.Int32(r.Address + 4)
+	return r.heap.UInt32(r.Address + 4)
 }
 
 func (r *rarMemBlock) SetNext(next int) {
-	r.heap.PutInt32(r.Address+4, next)
+	r.heap.PutUInt32(r.Address+4, next)
 }
 
 func (r *rarMemBlock) Prev() int {
-	return r.heap.Int32(r.Address + 8)
+	return r.heap.UInt32(r.Address + 8)
 }
 
 func (r *rarMemBlock) SetPrev(prev int) {
-	r.heap.PutInt32(r.Address+8, prev)
+	r.heap.PutUInt32(r.Address+8, prev)
 }
 
 func (r *rarMemBlock) Nu() int {

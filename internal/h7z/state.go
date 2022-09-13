@@ -31,11 +31,11 @@ func (s *state) IncrementFreq(dfreq int) {
 }
 
 func (s *state) Successor() int {
-	return s.heap.Int32(s.Address + 2)
+	return s.heap.UInt32(s.Address + 2)
 }
 
 func (s *state) SetSuccessor(successor int) {
-	s.heap.PutInt32(s.Address+2, successor)
+	s.heap.PutUInt32(s.Address+2, successor)
 }
 
 func (s *state) SetRef(r stateRef) {

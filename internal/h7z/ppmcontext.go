@@ -44,11 +44,11 @@ func (p *ppmContext) SetOneState(r stateRef) {
 }
 
 func (p *ppmContext) Suffix() int {
-	return p.Memory.Int32(p.address + 8)
+	return p.Memory.UInt32(p.address + 8)
 }
 
 func (p *ppmContext) SetSuffix(suffix int) {
-	p.Memory.PutInt32(p.address+8, suffix)
+	p.Memory.PutUInt32(p.address+8, suffix)
 }
 
 func (p *ppmContext) SetAddress(addr int) {

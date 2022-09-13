@@ -27,7 +27,7 @@ func (h *heap) Byte(address int) int {
 	return int(h.buffer[address])
 }
 
-func (h *heap) PutInt32(address, x int) {
+func (h *heap) PutUInt32(address, x int) {
 	binary.LittleEndian.PutUint32(h.buffer[address:], uint32(x))
 	/* for debugging use this but it disables inlining */
 	/*
@@ -50,7 +50,7 @@ func (h *heap) UInt16(address int) int {
 	return int(u)
 }
 
-func (h *heap) Int32(address int) int {
+func (h *heap) UInt32(address int) int {
 	u := uint32(h.buffer[0+address]) |
 		uint32(h.buffer[1+address])<<8 |
 		uint32(h.buffer[2+address])<<16 |
